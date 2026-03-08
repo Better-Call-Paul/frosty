@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:frosty/screens/channel/chat/details/chat_users_list.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_store.dart';
+import 'package:frosty/screens/channel/video/native_video_store.dart';
 import 'package:frosty/screens/channel/video/stream_info_bar.dart';
-import 'package:frosty/screens/channel/video/video_store.dart';
+import 'package:frosty/screens/channel/video/video_player_interface.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
 import 'package:frosty/theme.dart';
 import 'package:frosty/utils.dart';
@@ -21,7 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Creates a widget containing controls which enable interactions with an underlying [Video] widget.
 class VideoOverlay extends StatelessWidget {
-  final VideoStore videoStore;
+  final VideoPlayerInterface videoStore;
   final ChatStore chatStore;
   final SettingsStore settingsStore;
 
@@ -344,7 +345,10 @@ class VideoOverlay extends StatelessWidget {
                     if (videoStore.settingsStore.fullScreen &&
                         context.isLandscape)
                       chatOverlayButton,
-                    if (!Platform.isIOS || isIPad()) videoSettingsButton,
+                    if (!Platform.isIOS ||
+                        isIPad() ||
+                        videoStore is NativeVideoStore)
+                      videoSettingsButton,
                   ],
                 ),
                 Center(

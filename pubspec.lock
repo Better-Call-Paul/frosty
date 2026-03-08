@@ -97,6 +97,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  better_native_video_player:
+    dependency: "direct main"
+    description:
+      name: better_native_video_player
+      sha256: ba3771b064d0369270ced87a0e1319b376d96740ed7e94804f500b1578729bbb
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.11"
   boolean_selector:
     dependency: transitive
     description:
@@ -313,6 +321,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  dismissible_page:
+    dependency: transitive
+    description:
+      name: dismissible_page
+      sha256: "5b2316f770fe83583f770df1f6505cb19102081c5971979806e77f2e507a9958"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   extended_text_field:
     dependency: "direct main"
     description:
@@ -449,6 +465,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  floating:
+    dependency: transitive
+    description:
+      name: floating
+      sha256: e51ce1dbcab3ea83da0ad1b07f2091b99c0e8680184c780a000567f41234d454
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0"
   flutter:
     dependency: "direct main"
     description: flutter

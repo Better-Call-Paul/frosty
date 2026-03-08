@@ -6,9 +6,12 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_store.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_tabs_store.dart';
 import 'package:frosty/screens/channel/chat/widgets/chat_tabs.dart';
+import 'package:frosty/screens/channel/video/native_video.dart';
+import 'package:frosty/screens/channel/video/native_video_store.dart';
 import 'package:frosty/screens/channel/video/stream_info_bar.dart';
 import 'package:frosty/screens/channel/video/video.dart';
 import 'package:frosty/screens/channel/video/video_overlay.dart';
+import 'package:frosty/screens/channel/video/video_player_interface.dart';
 import 'package:frosty/screens/channel/video/video_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
 import 'package:frosty/theme.dart';
@@ -75,13 +78,23 @@ class _VideoChatState extends State<VideoChat>
     primaryDisplayName: widget.userName,
   );
 
-  late final VideoStore _videoStore = VideoStore(
-    userLogin: widget.userLogin,
-    userId: widget.userId,
-    twitchApi: context.twitchApi,
-    authStore: context.authStore,
-    settingsStore: context.settingsStore,
-  );
+  late final VideoPlayerInterface _videoStore =
+      Platform.isIOS && context.settingsStore.useNativePlayer
+          ? NativeVideoStore(
+              userLogin: widget.userLogin,
+              userId: widget.userId,
+              twitchApi: context.twitchApi,
+              twitchGqlApi: context.twitchGqlApi,
+              authStore: context.authStore,
+              settingsStore: context.settingsStore,
+            )
+          : VideoStore(
+              userLogin: widget.userLogin,
+              userId: widget.userId,
+              twitchApi: context.twitchApi,
+              authStore: context.authStore,
+              settingsStore: context.settingsStore,
+            );
 
   @override
   void initState() {
@@ -297,7 +310,12 @@ class _VideoChatState extends State<VideoChat>
 
     final player = GestureDetector(
       onLongPress: _videoStore.handleToggleOverlay,
-      child: Video(key: _videoKey, videoStore: _videoStore),
+      child: _videoStore is NativeVideoStore
+          ? NativeVideo(nativeVideoStore: _videoStore)
+          : Video(
+              key: _videoKey,
+              videoStore: _videoStore as VideoStore,
+            ),
     );
 
     final overlay = GestureDetector(

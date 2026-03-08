@@ -68,6 +68,8 @@ abstract class _SettingsStoreBase with Store {
   static const defaultKeepScreenAwake = true;
 
   // Overlay defaults
+  static const defaultUseNativePlayer = false;
+
   static const defaultShowOverlay = true;
   static const defaultToggleableOverlay = false;
   static const defaultShowLatency = false;
@@ -89,6 +91,10 @@ abstract class _SettingsStoreBase with Store {
   @observable
   var keepScreenAwake = defaultKeepScreenAwake;
 
+  @JsonKey(defaultValue: defaultUseNativePlayer)
+  @observable
+  var useNativePlayer = defaultUseNativePlayer;
+
   // Overlay options
   @JsonKey(defaultValue: defaultShowOverlay)
   @observable
@@ -108,6 +114,8 @@ abstract class _SettingsStoreBase with Store {
     defaultToHighestQuality = defaultDefaultToHighestQuality;
     useTextureRendering = defaultUseTextureRendering;
     keepScreenAwake = defaultKeepScreenAwake;
+
+    useNativePlayer = defaultUseNativePlayer;
 
     showOverlay = defaultShowOverlay;
     toggleableOverlay = defaultToggleableOverlay;

@@ -24,6 +24,16 @@ class VideoSettings extends StatelessWidget {
             value: settingsStore.showVideo,
             onChanged: (newValue) => settingsStore.showVideo = newValue,
           ),
+          if (Platform.isIOS && settingsStore.showVideo)
+            SettingsListSwitch(
+              title: 'Native player (experimental)',
+              subtitle: const Text(
+                'Uses a native video player with improved picture-in-picture.',
+              ),
+              value: settingsStore.useNativePlayer,
+              onChanged: (newValue) =>
+                  settingsStore.useNativePlayer = newValue,
+            ),
           if (!Platform.isIOS || isIPad())
             SettingsListSwitch(
               title: 'Default to highest quality',

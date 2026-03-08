@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 /// Twitch API client ID.
 const clientId = String.fromEnvironment('CLIENT_ID');
 
+/// Twitch GQL client ID (web player, used for playback access tokens).
+const twitchGqlClientId = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
+
 /// Twitch API client secret.
 const secret = String.fromEnvironment('SECRET');
 

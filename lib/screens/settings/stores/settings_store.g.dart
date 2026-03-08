@@ -24,6 +24,7 @@ SettingsStore _$SettingsStoreFromJson(
   ..defaultToHighestQuality = json['defaultToHighestQuality'] as bool? ?? false
   ..useTextureRendering = json['useTextureRendering'] as bool? ?? true
   ..keepScreenAwake = json['keepScreenAwake'] as bool? ?? true
+  ..useNativePlayer = json['useNativePlayer'] as bool? ?? false
   ..showOverlay = json['showOverlay'] as bool? ?? true
   ..toggleableOverlay = json['toggleableOverlay'] as bool? ?? false
   ..showLatency = json['showLatency'] as bool? ?? false
@@ -102,6 +103,7 @@ Map<String, dynamic> _$SettingsStoreToJson(
   'defaultToHighestQuality': instance.defaultToHighestQuality,
   'useTextureRendering': instance.useTextureRendering,
   'keepScreenAwake': instance.keepScreenAwake,
+  'useNativePlayer': instance.useNativePlayer,
   'showOverlay': instance.showOverlay,
   'toggleableOverlay': instance.toggleableOverlay,
   'showLatency': instance.showLatency,
@@ -340,6 +342,24 @@ mixin _$SettingsStore on _SettingsStoreBase, Store {
   set keepScreenAwake(bool value) {
     _$keepScreenAwakeAtom.reportWrite(value, super.keepScreenAwake, () {
       super.keepScreenAwake = value;
+    });
+  }
+
+  late final _$useNativePlayerAtom = Atom(
+    name: '_SettingsStoreBase.useNativePlayer',
+    context: context,
+  );
+
+  @override
+  bool get useNativePlayer {
+    _$useNativePlayerAtom.reportRead();
+    return super.useNativePlayer;
+  }
+
+  @override
+  set useNativePlayer(bool value) {
+    _$useNativePlayerAtom.reportWrite(value, super.useNativePlayer, () {
+      super.useNativePlayer = value;
     });
   }
 
@@ -1166,6 +1186,7 @@ showVideo: ${showVideo},
 defaultToHighestQuality: ${defaultToHighestQuality},
 useTextureRendering: ${useTextureRendering},
 keepScreenAwake: ${keepScreenAwake},
+useNativePlayer: ${useNativePlayer},
 showOverlay: ${showOverlay},
 toggleableOverlay: ${toggleableOverlay},
 showLatency: ${showLatency},
