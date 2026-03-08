@@ -185,9 +185,15 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
         _error = null;
       });
     } catch (e) {
+      // Wait for stream info so we can distinguish "offline" from "broken".
+      await updateStreamInfo();
       runInAction(() {
-        _error =
-            'Native player failed to load. Try the standard player in Settings.';
+        // Only show the error if the stream is actually live — an offline
+        // channel is expected to fail here and the overlay handles it.
+        if (_streamInfo != null) {
+          _error =
+              'Native player failed to load. Try the standard player in Settings.';
+        }
       });
       debugPrint('NativeVideoStore init error: $e');
     }

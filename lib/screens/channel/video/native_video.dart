@@ -17,11 +17,14 @@ class NativeVideo extends StatelessWidget {
         final controller = nativeVideoStore.controller;
         final error = nativeVideoStore.error;
 
+        final isOffline =
+            nativeVideoStore.streamInfo == null && error == null;
+
         return ColoredBox(
           color: Colors.black,
           child: Stack(
             children: [
-              if (controller != null)
+              if (controller != null && !isOffline)
                 NativeVideoPlayer(
                   key: ObjectKey(controller),
                   controller: controller,
@@ -34,6 +37,17 @@ class NativeVideo extends StatelessWidget {
                       error,
                       style: const TextStyle(color: Colors.white70),
                       textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              if (isOffline)
+                const Center(
+                  child: Text(
+                    'Offline',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

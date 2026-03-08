@@ -260,7 +260,6 @@ class VideoOverlay extends StatelessWidget {
                                     displayName: chatStore.displayName,
                                     showUptime: false,
                                     showViewerCount: false,
-                                    showOfflineIndicator: false,
                                     textColor: surfaceColor,
                                     isOffline: true,
                                     isInSharedChatMode:
