@@ -11,6 +11,7 @@ import 'package:frosty/models/stream.dart';
 import 'package:frosty/screens/channel/video/video_player_interface.dart';
 import 'package:frosty/screens/settings/stores/auth_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
+import 'package:frosty/services/cookie_extractor.dart';
 import 'package:mobx/mobx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,13 +35,14 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   NativeVideoPlayerController? _controller;
 
   Timer? _overlayTimer;
-  Timer? _streamInfoTimer;
+  Timer? _latencyTimer;
   DateTime? _lastStreamInfoUpdate;
   Future<void>? _streamInfoRequest;
   bool _overlayWasVisibleBeforePip = true;
 
   List<NativeVideoPlayerQuality> _qualityObjects = [];
   var _firstTimeSettingQuality = true;
+  int? _pendingQualityIndex;
 
   StreamSubscription<bool>? _pipSub;
   StreamSubscription<List<NativeVideoPlayerQuality>>? _qualitiesSub;
@@ -67,7 +69,6 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   String get streamQuality =>
       _availableStreamQualities.elementAtOrNull(_streamQualityIndex) ?? 'Auto';
 
-  /// Always null — native player has no latency-to-broadcaster metric.
   @readonly
   String? _latency;
 
@@ -101,8 +102,10 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> _initPlayer() async {
     try {
-      // Try with auth token for ad-free playback, fall back to anonymous.
-      final authToken = authStore.isLoggedIn ? authStore.token : null;
+      // Prefer web cookie token (works with web Client-ID) for ad-free playback.
+      // Fall back to direct cookie extraction if AuthStore hasn't resolved it yet.
+      var authToken = authStore.gqlToken;
+      authToken ??= await CookieExtractor.extractTwitchAuthToken();
       late final PlaybackAccessToken token;
       try {
         token = await twitchGqlApi.getPlaybackAccessToken(
@@ -159,20 +162,24 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
           if (_firstTimeSettingQuality && qualities.isNotEmpty) {
             _firstTimeSettingQuality = false;
             if (settingsStore.defaultToHighestQuality) {
-              _setStreamQualityIndex(1);
-              return;
+              _pendingQualityIndex = 1;
+            } else {
+              SharedPreferences.getInstance().then((prefs) {
+                final lastQuality = prefs.getString('last_stream_quality');
+                if (lastQuality != null) {
+                  final index = _availableStreamQualities.indexOf(lastQuality);
+                  if (index != -1) _pendingQualityIndex = index;
+                }
+              });
             }
-            SharedPreferences.getInstance().then((prefs) {
-              final lastQuality = prefs.getString('last_stream_quality');
-              if (lastQuality != null) {
-                setStreamQuality(lastQuality);
-              }
-            });
           }
         });
       });
 
       await _controller!.loadUrl(url: _hlsUrl!);
+      await _controller!.configureForLivePlayback();
+
+      _startLatencyPolling();
 
       runInAction(() {
         _error = null;
@@ -191,6 +198,11 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
       switch (event.state) {
         case PlayerActivityState.playing:
           _paused = false;
+          if (_pendingQualityIndex != null) {
+            final index = _pendingQualityIndex!;
+            _pendingQualityIndex = null;
+            _setStreamQualityIndex(index);
+          }
         case PlayerActivityState.paused:
         case PlayerActivityState.stopped:
         case PlayerActivityState.completed:
@@ -200,6 +212,34 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
           break;
       }
     });
+  }
+
+  void _startLatencyPolling() {
+    _latencyTimer?.cancel();
+    if (settingsStore.autoSyncChatDelay) {
+      settingsStore.syncedChatDelay = 0;
+    }
+    _latencyTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) async {
+        final seconds = await _controller?.getLatencyToLive();
+        if (seconds == null) return;
+        final rounded = seconds.round();
+
+        runInAction(() {
+          _latency = '${rounded}s';
+        });
+
+        if (!settingsStore.autoSyncChatDelay) return;
+
+        // Only update when unset or drifted by >2s to avoid restarting
+        // the chat countdown on minor fluctuations.
+        final current = settingsStore.syncedChatDelay;
+        if (current == 0 || (seconds - current).abs() > 2) {
+          settingsStore.syncedChatDelay = seconds;
+        }
+      },
+    );
   }
 
   void _scheduleOverlayHide([Duration delay = const Duration(seconds: 5)]) {
@@ -267,11 +307,13 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     HapticFeedback.lightImpact();
     _paused = true;
     _firstTimeSettingQuality = true;
+    _pendingQualityIndex = null;
     _isInPipMode = false;
     _availableStreamQualities = [];
     _qualityObjects = [];
     _error = null;
 
+    _latencyTimer?.cancel();
     _pipSub?.cancel();
     _qualitiesSub?.cancel();
     _controller?.removeActivityListener(_handleActivityEvent);
@@ -389,7 +431,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   void dispose() {
     _overlayTimer?.cancel();
-    _streamInfoTimer?.cancel();
+    _latencyTimer?.cancel();
     _pipSub?.cancel();
     _qualitiesSub?.cancel();
 

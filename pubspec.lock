@@ -100,10 +100,11 @@ packages:
   better_native_video_player:
     dependency: "direct main"
     description:
-      name: better_native_video_player
-      sha256: ba3771b064d0369270ced87a0e1319b376d96740ed7e94804f500b1578729bbb
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: frosty-patches
+      resolved-ref: e16914aff5ea8a0f5bc038eb706764738f2a99c9
+      url: "https://github.com/tommyxchow/flutter-native-video-player.git"
+    source: git
     version: "0.4.11"
   boolean_selector:
     dependency: transitive
