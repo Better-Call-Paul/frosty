@@ -37,9 +37,12 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
 
   Timer? _overlayTimer;
   Timer? _latencyTimer;
+  Timer? _stallRecoveryTimer;
+  var _stallRecoveryAttempt = 0;
   DateTime? _lastStreamInfoUpdate;
   Future<void>? _streamInfoRequest;
   bool _overlayWasVisibleBeforePip = true;
+  var _userPaused = false;
 
   List<NativeVideoPlayerQuality> _qualityObjects = [];
   var _firstTimeSettingQuality = true;
@@ -228,18 +231,49 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
         case PlayerActivityState.playing:
           _loading = false;
           _paused = false;
+          _stallRecoveryTimer?.cancel();
+          _stallRecoveryAttempt = 0;
           if (_pendingQualityIndex != null) {
             final index = _pendingQualityIndex!;
             _pendingQualityIndex = null;
             _setStreamQualityIndex(index);
           }
+        case PlayerActivityState.buffering:
+        case PlayerActivityState.loading:
+          _loading = true;
+          if (!_userPaused) _startStallRecoveryTimer();
+        case PlayerActivityState.error:
+          _loading = false;
+          _stallRecoveryTimer?.cancel();
+          _error = event.data?['message'] as String? ??
+              'Playback error. Try refreshing or switch to the standard player in Settings.';
         case PlayerActivityState.paused:
         case PlayerActivityState.stopped:
         case PlayerActivityState.completed:
         case PlayerActivityState.idle:
           _paused = true;
+          _stallRecoveryTimer?.cancel();
         default:
           break;
+      }
+    });
+  }
+
+  void _startStallRecoveryTimer() {
+    _stallRecoveryTimer?.cancel();
+    _stallRecoveryTimer = Timer(const Duration(seconds: 8), () {
+      if (_disposed || !_loading || _userPaused) return;
+      _stallRecoveryAttempt++;
+      if (_stallRecoveryAttempt <= 1) {
+        // Light recovery: seek to live edge and resume.
+        debugPrint('NativeVideoStore: stall detected, seeking to live edge');
+        _controller?.seekToLiveEdge();
+        _controller?.play();
+        _startStallRecoveryTimer();
+      } else {
+        // Heavy recovery: new HLS token + full player restart.
+        debugPrint('NativeVideoStore: stall persists, refreshing player');
+        handleRefresh();
       }
     });
   }
@@ -314,8 +348,10 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   void handlePausePlay() {
     if (_controller == null) return;
     if (_paused) {
+      _userPaused = false;
       _controller!.play();
     } else {
+      _userPaused = true;
       _controller!.pause();
     }
   }
@@ -341,6 +377,8 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     _disposed = false;
     _loading = true;
     _paused = true;
+    _userPaused = false;
+    _stallRecoveryAttempt = 0;
     _firstTimeSettingQuality = true;
     _pendingQualityIndex = null;
     _isInPipMode = false;
@@ -349,6 +387,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     _error = null;
 
     _latencyTimer?.cancel();
+    _stallRecoveryTimer?.cancel();
     _pipSub?.cancel();
     _qualitiesSub?.cancel();
     _controller?.removeActivityListener(_handleActivityEvent);
@@ -457,7 +496,6 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
       runInAction(() {
         _overlayTimer?.cancel();
         _streamInfo = null;
-        _paused = true;
         _offlineChannelInfo = channel;
       });
     }
@@ -467,6 +505,9 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   void handleAppResume() {
     updateStreamInfo(forceUpdate: true);
+    if (!_userPaused && _controller != null) {
+      _controller!.play();
+    }
   }
 
   @override
@@ -482,6 +523,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
 
     _overlayTimer?.cancel();
     _latencyTimer?.cancel();
+    _stallRecoveryTimer?.cancel();
     _pipSub?.cancel();
     _qualitiesSub?.cancel();
     _disposeAndroidAutoPipReaction?.call();
