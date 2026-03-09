@@ -5,6 +5,7 @@ import 'package:frosty/screens/onboarding/login_webview.dart';
 import 'package:frosty/screens/settings/account/account_options.dart';
 import 'package:frosty/screens/settings/stores/auth_store.dart';
 import 'package:frosty/utils/modal_bottom_sheet.dart';
+import 'package:frosty/widgets/frosty_dialog.dart';
 import 'package:frosty/widgets/profile_picture.dart';
 
 class ProfileCard extends StatelessWidget {
@@ -58,16 +59,19 @@ class ProfileCard extends StatelessWidget {
                   onTap: () {
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Web session'),
-                        content: Text(
-                          hasToken
-                              ? 'Your Twitch web session is linked. When using the native player, ads will be avoided on channels where you have a subscription or Twitch Turbo.'
-                              : 'Your Twitch web session is not linked. Log in again to avoid ads when using the native player on channels where you have a subscription or Twitch Turbo.',
-                        ),
+                      builder: (context) => FrostyDialog(
+                        title: 'Web session',
+                        message: hasToken
+                            ? 'Your Twitch web session is linked. When using the native player, ads will be avoided on channels where you have a subscription or Twitch Turbo.'
+                            : 'Your Twitch web session is not linked. Log in again to avoid ads when using the native player on channels where you have a subscription or Twitch Turbo.',
                         actions: [
                           if (!hasToken)
                             TextButton(
+                              onPressed: Navigator.of(context).pop,
+                              child: const Text('Cancel'),
+                            ),
+                          if (!hasToken)
+                            FilledButton(
                               onPressed: () {
                                 Navigator.pop(context);
                                 Navigator.push(
@@ -79,10 +83,11 @@ class ProfileCard extends StatelessWidget {
                               },
                               child: const Text('Log in'),
                             ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
-                          ),
+                          if (hasToken)
+                            TextButton(
+                              onPressed: Navigator.of(context).pop,
+                              child: const Text('OK'),
+                            ),
                         ],
                       ),
                     );
