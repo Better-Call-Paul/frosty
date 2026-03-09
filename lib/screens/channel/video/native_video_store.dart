@@ -44,6 +44,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   List<NativeVideoPlayerQuality> _qualityObjects = [];
   var _firstTimeSettingQuality = true;
   int? _pendingQualityIndex;
+  var _disposed = false;
 
   final _pip = SimplePip();
   ReactionDisposer? _disposeAndroidAutoPipReaction;
@@ -137,9 +138,12 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
         }
       }
 
+      if (_disposed) return;
+
       _hlsUrl = twitchGqlApi.buildHlsUrl(login: userLogin, token: token);
 
       await _controller!.initialize();
+      if (_disposed) return;
 
       _pipSub = _controller!.isPipEnabledStream.listen((isPip) {
         runInAction(() {
@@ -180,6 +184,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
               _pendingQualityIndex = 1;
             } else {
               SharedPreferences.getInstance().then((prefs) {
+                if (_disposed) return;
                 final lastQuality = prefs.getString('last_stream_quality');
                 if (lastQuality != null) {
                   final index = _availableStreamQualities.indexOf(lastQuality);
@@ -331,6 +336,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> handleRefresh() async {
     HapticFeedback.lightImpact();
+    _disposed = false;
     _loading = true;
     _paused = true;
     _firstTimeSettingQuality = true;
@@ -464,6 +470,8 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @override
   @action
   void dispose() {
+    _disposed = true;
+
     if (Platform.isAndroid) {
       SimplePip.isAutoPipAvailable.then((isAutoPipAvailable) {
         if (isAutoPipAvailable) _pip.setAutoPipMode(autoEnter: false);
