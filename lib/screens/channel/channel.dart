@@ -336,6 +336,10 @@ class _VideoChatState extends State<VideoChat>
       },
       child: Observer(
         builder: (_) {
+          if (_videoStore.loading) {
+            return const SizedBox.shrink();
+          }
+
           final videoOverlay = VideoOverlay(
             videoStore: _videoStore,
             chatStore: _chatStore,
@@ -367,6 +371,26 @@ class _VideoChatState extends State<VideoChat>
         return Stack(
           children: [
             player,
+            AnimatedOpacity(
+              opacity: _videoStore.loading ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              child: const IgnorePointer(
+                child: ColoredBox(
+                  color: Colors.black,
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white38,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             if (_videoStore.settingsStore.showOverlay) overlay,
           ],
         );

@@ -52,6 +52,9 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   StreamSubscription<List<NativeVideoPlayerQuality>>? _qualitiesSub;
 
   @readonly
+  var _loading = true;
+
+  @readonly
   var _paused = true;
 
   @readonly
@@ -200,6 +203,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
       // Wait for stream info so we can distinguish "offline" from "broken".
       await updateStreamInfo();
       runInAction(() {
+        _loading = false;
         // Only show the error if the stream is actually live — an offline
         // channel is expected to fail here and the overlay handles it.
         if (_streamInfo != null) {
@@ -215,6 +219,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     runInAction(() {
       switch (event.state) {
         case PlayerActivityState.playing:
+          _loading = false;
           _paused = false;
           if (_pendingQualityIndex != null) {
             final index = _pendingQualityIndex!;
@@ -326,6 +331,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> handleRefresh() async {
     HapticFeedback.lightImpact();
+    _loading = true;
     _paused = true;
     _firstTimeSettingQuality = true;
     _pendingQualityIndex = null;

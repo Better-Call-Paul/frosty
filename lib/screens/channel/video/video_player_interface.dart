@@ -7,6 +7,7 @@ import 'package:frosty/screens/settings/stores/settings_store.dart';
 abstract class VideoPlayerInterface {
   SettingsStore get settingsStore;
 
+  bool get loading;
   bool get paused;
   bool get overlayVisible;
   bool get isInPipMode;

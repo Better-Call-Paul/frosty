@@ -104,6 +104,7 @@ abstract class VideoStoreBase with Store implements VideoPlayerInterface {
         ..addJavaScriptChannel(
           'VideoPlaying',
           onMessageReceived: (message) {
+            _loading = false;
             _paused = false;
             if (Platform.isAndroid) pip.setIsPlaying(true);
           },
@@ -170,6 +171,9 @@ abstract class VideoStoreBase with Store implements VideoPlayerInterface {
 
   /// Disposes the latency settings reaction.
   ReactionDisposer? _disposeLatencySettingsReaction;
+
+  @readonly
+  var _loading = true;
 
   /// If the video is currently paused.
   ///
@@ -975,6 +979,7 @@ abstract class VideoStoreBase with Store implements VideoPlayerInterface {
       _offlineChannelInfo = null;
     } catch (e) {
       _overlayTimer?.cancel();
+      _loading = false;
       _streamInfo = null;
       _paused = true;
 
@@ -1017,6 +1022,7 @@ abstract class VideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> handleRefresh() async {
     HapticFeedback.lightImpact();
+    _loading = true;
     _paused = true;
     _firstTimeSettingQuality = true;
     _isInPipMode = false;

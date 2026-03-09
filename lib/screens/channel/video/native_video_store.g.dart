@@ -29,6 +29,26 @@ mixin _$NativeVideoStore on NativeVideoStoreBase, Store {
     });
   }
 
+  late final _$_loadingAtom = Atom(
+    name: 'NativeVideoStoreBase._loading',
+    context: context,
+  );
+
+  bool get loading {
+    _$_loadingAtom.reportRead();
+    return super._loading;
+  }
+
+  @override
+  bool get _loading => loading;
+
+  @override
+  set _loading(bool value) {
+    _$_loadingAtom.reportWrite(value, super._loading, () {
+      super._loading = value;
+    });
+  }
+
   late final _$_pausedAtom = Atom(
     name: 'NativeVideoStoreBase._paused',
     context: context,

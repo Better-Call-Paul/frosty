@@ -18,7 +18,9 @@ class NativeVideo extends StatelessWidget {
         final error = nativeVideoStore.error;
 
         final isOffline =
-            nativeVideoStore.streamInfo == null && error == null;
+            !nativeVideoStore.loading &&
+            nativeVideoStore.streamInfo == null &&
+            error == null;
 
         return ColoredBox(
           color: Colors.black,
