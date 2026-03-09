@@ -225,27 +225,35 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     if (settingsStore.autoSyncChatDelay) {
       settingsStore.syncedChatDelay = 0;
     }
+    _pollLatency();
     _latencyTimer = Timer.periodic(
       const Duration(seconds: 10),
-      (_) async {
-        final seconds = await _controller?.getLatencyToLive();
-        if (seconds == null) return;
-        final rounded = seconds.round();
-
-        runInAction(() {
-          _latency = '${rounded}s';
-        });
-
-        if (!settingsStore.autoSyncChatDelay) return;
-
-        // Only update when unset or drifted by >2s to avoid restarting
-        // the chat countdown on minor fluctuations.
-        final current = settingsStore.syncedChatDelay;
-        if (current == 0 || (seconds - current).abs() > 2) {
-          settingsStore.syncedChatDelay = seconds;
-        }
-      },
+      (_) => _pollLatency(),
     );
+  }
+
+  Future<void> _pollLatency() async {
+    final seconds = await _controller?.getLatencyToLive();
+    if (seconds == null) return;
+    final rounded = seconds.round();
+
+    runInAction(() {
+      _latency = '${rounded}s';
+    });
+
+    // Auto seek to live edge if we've drifted too far.
+    if (seconds > 15) {
+      await _controller?.seekToLiveEdge();
+    }
+
+    if (!settingsStore.autoSyncChatDelay) return;
+
+    // Only update when unset or drifted by >2s to avoid restarting
+    // the chat countdown on minor fluctuations.
+    final current = settingsStore.syncedChatDelay;
+    if (current == 0 || (seconds - current).abs() > 2) {
+      settingsStore.syncedChatDelay = seconds;
+    }
   }
 
   void _scheduleOverlayHide([Duration delay = const Duration(seconds: 5)]) {
@@ -428,9 +436,10 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @override
   @action
   void handleAppResume() {
-    if (!settingsStore.showVideo) {
-      updateStreamInfo(forceUpdate: true);
-    }
+    updateStreamInfo(forceUpdate: true);
+    // Re-check latency immediately — the stream may have drifted or died
+    // while backgrounded. If latency > 15s, _pollLatency auto-seeks to live edge.
+    _pollLatency();
   }
 
   @override
