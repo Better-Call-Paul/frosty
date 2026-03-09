@@ -45,22 +45,17 @@ class ProfileCard extends StatelessWidget {
               userLogin: authStore.user.details!.login,
               radius: 12,
             ),
-            title: Text(authStore.user.details!.displayName),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+            title: Row(
               children: [
-                IconButton(
-                  tooltip: hasToken
-                      ? 'Web session linked'
-                      : 'Web session not linked',
-                  icon: Icon(
-                    hasToken
-                        ? Icons.check_circle_outline_rounded
-                        : Icons.link_off_rounded,
-                    size: 20,
-                    color: hasToken ? Colors.green : null,
+                Flexible(
+                  child: Text(
+                    authStore.user.details!.displayName,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  onPressed: () {
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -92,10 +87,17 @@ class ProfileCard extends StatelessWidget {
                       ),
                     );
                   },
+                  child: Icon(
+                    hasToken
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.info_outline_rounded,
+                    size: 16,
+                    color: hasToken ? Colors.green : Colors.amber,
+                  ),
                 ),
-                const Icon(Icons.chevron_right_rounded),
               ],
             ),
+            trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showAccountOptionsModalBottomSheet(context),
           );
         }
