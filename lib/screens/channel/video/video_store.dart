@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frosty/apis/twitch_api.dart';
+import 'package:frosty/constants.dart';
 import 'package:frosty/models/channel.dart';
 import 'package:frosty/models/stream.dart';
 import 'package:frosty/screens/channel/video/video_player_interface.dart';
@@ -88,7 +89,7 @@ abstract class VideoStoreBase with Store implements VideoPlayerInterface {
                 return;
               }
               final prefs = await SharedPreferences.getInstance();
-              final lastStreamQuality = prefs.getString('last_stream_quality');
+              final lastStreamQuality = prefs.getString(kLastStreamQualityKey);
               if (lastStreamQuality == null) return;
               setStreamQuality(lastStreamQuality);
             }

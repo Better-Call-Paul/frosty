@@ -727,7 +727,7 @@ class _VideoChatState extends State<VideoChat>
                         if (settingsStore.showVideo) ...[
                           AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Container(), // Placeholder for video space
+                            child: SizedBox(),
                           ),
                         ],
                         Expanded(child: chat),

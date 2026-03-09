@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:frosty/constants.dart';
 import 'package:frosty/screens/channel/chat/details/chat_users_list.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_store.dart';
 import 'package:frosty/screens/channel/video/native_video_store.dart';
@@ -109,7 +110,7 @@ class VideoOverlay extends StatelessWidget {
                               videoStore.setStreamQuality(quality);
                               SharedPreferences.getInstance().then(
                                 (prefs) => prefs.setString(
-                                  'last_stream_quality',
+                                  kLastStreamQualityKey,
                                   quality,
                                 ),
                               );

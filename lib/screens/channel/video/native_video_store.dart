@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frosty/apis/twitch_api.dart';
 import 'package:frosty/apis/twitch_gql_api.dart';
+import 'package:frosty/constants.dart';
 import 'package:frosty/models/channel.dart';
 import 'package:frosty/models/playback_access_token.dart';
 import 'package:frosty/models/stream.dart';
@@ -188,7 +189,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
             } else {
               SharedPreferences.getInstance().then((prefs) {
                 if (_disposed) return;
-                final lastQuality = prefs.getString('last_stream_quality');
+                final lastQuality = prefs.getString(kLastStreamQualityKey);
                 if (lastQuality != null) {
                   final index = _availableStreamQualities.indexOf(lastQuality);
                   if (index != -1) _pendingQualityIndex = index;
@@ -210,7 +211,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     } catch (e) {
       if (_disposed) return;
       // Wait for stream info so we can distinguish "offline" from "broken".
-      await updateStreamInfo();
+      await updateStreamInfo(forceUpdate: true);
       if (_disposed) return;
       runInAction(() {
         _loading = false;
@@ -374,7 +375,6 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> handleRefresh() async {
     HapticFeedback.lightImpact();
-    _disposed = false;
     _loading = true;
     _paused = true;
     _userPaused = false;
@@ -399,7 +399,7 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     );
     _controller!.addActivityListener(_handleActivityEvent);
 
-    await _initPlayer();
+    _initPlayer();
     updateStreamInfo();
   }
 
