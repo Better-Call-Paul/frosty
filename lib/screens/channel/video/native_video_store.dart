@@ -205,8 +205,10 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
         _error = null;
       });
     } catch (e) {
+      if (_disposed) return;
       // Wait for stream info so we can distinguish "offline" from "broken".
       await updateStreamInfo();
+      if (_disposed) return;
       runInAction(() {
         _loading = false;
         // Only show the error if the stream is actually live — an offline
