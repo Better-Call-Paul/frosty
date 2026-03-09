@@ -11,7 +11,6 @@ import 'package:frosty/models/stream.dart';
 import 'package:frosty/screens/channel/video/video_player_interface.dart';
 import 'package:frosty/screens/settings/stores/auth_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
-import 'package:frosty/services/cookie_extractor.dart';
 import 'package:mobx/mobx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,10 +101,8 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   Future<void> _initPlayer() async {
     try {
-      // Prefer web cookie token (works with web Client-ID) for ad-free playback.
-      // Fall back to direct cookie extraction if AuthStore hasn't resolved it yet.
-      var authToken = authStore.gqlToken;
-      authToken ??= await CookieExtractor.extractTwitchAuthToken();
+      // Use web cookie token (works with web Client-ID) for ad-free playback.
+      final authToken = authStore.gqlToken;
       late final PlaybackAccessToken token;
       try {
         token = await twitchGqlApi.getPlaybackAccessToken(

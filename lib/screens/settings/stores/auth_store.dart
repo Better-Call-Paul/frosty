@@ -275,9 +275,6 @@ abstract class AuthBase with Store {
         }
       }
 
-      // Try extracting a fresh GQL token from the WebView cookie store.
-      if (_isLoggedIn) await _extractGqlToken();
-
       FirebaseCrashlytics.instance.setCustomKey('is_logged_in', _isLoggedIn);
       _error = null;
     } catch (e) {

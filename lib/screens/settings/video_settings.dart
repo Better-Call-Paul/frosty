@@ -28,7 +28,7 @@ class VideoSettings extends StatelessWidget {
             SettingsListSwitch(
               title: 'Native player (experimental)',
               subtitle: const Text(
-                'Uses a native video player with improved picture-in-picture.',
+                'Native video player with auto picture-in-picture and quality selection.',
               ),
               value: settingsStore.useNativePlayer,
               onChanged: (newValue) =>

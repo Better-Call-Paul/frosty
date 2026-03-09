@@ -39,13 +39,63 @@ class ProfileCard extends StatelessWidget {
           );
         }
         if (authStore.isLoggedIn && authStore.user.details != null) {
+          final hasToken = authStore.gqlToken != null;
           return ListTile(
             leading: ProfilePicture(
               userLogin: authStore.user.details!.login,
               radius: 12,
             ),
             title: Text(authStore.user.details!.displayName),
-            trailing: const Icon(Icons.chevron_right_rounded),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: hasToken
+                      ? 'Web session linked'
+                      : 'Web session not linked',
+                  icon: Icon(
+                    hasToken
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.link_off_rounded,
+                    size: 20,
+                    color: hasToken ? Colors.green : null,
+                  ),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Web session'),
+                        content: Text(
+                          hasToken
+                              ? 'Your Twitch web session is linked. When using the native player, ads will be avoided on channels where you have a subscription or Twitch Turbo.'
+                              : 'Your Twitch web session is not linked. Log in again to avoid ads when using the native player on channels where you have a subscription or Twitch Turbo.',
+                        ),
+                        actions: [
+                          if (!hasToken)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginWebView(),
+                                  ),
+                                );
+                              },
+                              child: const Text('Log in'),
+                            ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
             onTap: () => _showAccountOptionsModalBottomSheet(context),
           );
         }
