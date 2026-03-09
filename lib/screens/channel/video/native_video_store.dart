@@ -435,18 +435,23 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
 
   Future<void> _updateStreamInfoInternal() async {
     try {
-      _streamInfo = await twitchApi.getStream(userLogin: userLogin);
-      _offlineChannelInfo = null;
-    } catch (e) {
-      _overlayTimer?.cancel();
-      _streamInfo = null;
-      _paused = true;
-
-      try {
-        _offlineChannelInfo = await twitchApi.getChannel(userId: userId);
-      } catch (_) {
+      final info = await twitchApi.getStream(userLogin: userLogin);
+      runInAction(() {
+        _streamInfo = info;
         _offlineChannelInfo = null;
-      }
+      });
+    } catch (e) {
+      Channel? channel;
+      try {
+        channel = await twitchApi.getChannel(userId: userId);
+      } catch (_) {}
+
+      runInAction(() {
+        _overlayTimer?.cancel();
+        _streamInfo = null;
+        _paused = true;
+        _offlineChannelInfo = channel;
+      });
     }
   }
 
