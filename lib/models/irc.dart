@@ -8,6 +8,7 @@ import 'package:frosty/cache_manager.dart';
 import 'package:frosty/constants.dart';
 import 'package:frosty/models/badges.dart';
 import 'package:frosty/models/emotes.dart';
+import 'package:frosty/models/gql_chat_comment.dart';
 import 'package:frosty/models/user.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_assets_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
@@ -1152,6 +1153,56 @@ class IRCMessage {
       split: split,
       action: action,
       mention: mention,
+    );
+  }
+
+  /// Creates an [IRCMessage] from a GQL VOD chat comment.
+  ///
+  /// Maps GQL fields to IRC tags so [generateSpan] works identically
+  /// for both live and VOD chat messages.
+  factory IRCMessage.fromGqlComment(GqlChatComment comment) {
+    final tags = <String, String>{
+      'display-name': comment.commenterDisplayName ?? 'Deleted User',
+      'user-id': comment.commenterId ?? '',
+      'id': comment.id,
+      'tmi-sent-ts': '${comment.contentOffsetSeconds * 1000}',
+      if (comment.userColor != null) 'color': comment.userColor!,
+      if (comment.userBadges.isNotEmpty)
+        'badges': comment.userBadges
+            .map((b) => '${b.setId}/${b.version}')
+            .join(','),
+    };
+
+    // Reconstruct message text from fragments.
+    final messageText = comment.messageFragments
+        .map((f) => f.text ?? '')
+        .join();
+
+    // Build local emotes map from fragments that have Twitch emotes.
+    // generateSpan() will match these by name in the split words.
+    final localEmotes = <String, Emote>{};
+    for (final fragment in comment.messageFragments) {
+      if (fragment.emote != null && fragment.text != null) {
+        localEmotes[fragment.text!] = Emote(
+          name: fragment.text!,
+          zeroWidth: false,
+          url:
+              '$_twitchEmoteBaseUrl/${fragment.emote!.emoteId}$_emoteModeSuffix',
+          type: EmoteType.twitchSub,
+        );
+      }
+    }
+
+    return IRCMessage(
+      raw: '',
+      command: Command.privateMessage,
+      tags: tags,
+      user: comment.commenterLogin,
+      localEmotes: localEmotes.isNotEmpty ? localEmotes : null,
+      message: messageText,
+      split: messageText.split(' ').where((w) => w.isNotEmpty).toList(),
+      action: false,
+      mention: false,
     );
   }
 

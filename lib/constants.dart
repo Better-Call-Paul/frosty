@@ -9,6 +9,9 @@ const twitchGqlClientId = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 /// SharedPreferences key for the last-selected stream quality.
 const kLastStreamQualityKey = 'last_stream_quality';
 
+/// Twitch GQL mobile client ID (bypasses Client-Integrity checks, used for VOD chat).
+const twitchGqlMobileClientId = 'kd1unb4b3q4t58fwlpcbzcbnm76a8fp';
+
 /// Twitch API client secret.
 const secret = String.fromEnvironment('SECRET');
 

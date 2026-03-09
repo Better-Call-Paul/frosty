@@ -9,6 +9,7 @@ import 'package:frosty/models/badges.dart';
 import 'package:frosty/models/emotes.dart';
 import 'package:frosty/models/events.dart';
 import 'package:frosty/models/irc.dart';
+import 'package:frosty/screens/channel/chat/chat_render_context.dart';
 import 'package:frosty/screens/channel/chat/details/chat_details_store.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_assets_store.dart';
 import 'package:frosty/screens/settings/stores/auth_store.dart';
@@ -22,7 +23,7 @@ part 'chat_store.g.dart';
 /// The store and view-model for chat-related activities.
 class ChatStore = ChatStoreBase with _$ChatStore;
 
-abstract class ChatStoreBase with Store {
+abstract class ChatStoreBase with Store implements ChatRenderContext {
   /// The total maximum amount of messages in chat.
   static const _messageLimit = 5000;
 
@@ -99,9 +100,11 @@ abstract class ChatStoreBase with Store {
   final _messagesToRemove = (_messageLimit * 0.2).toInt();
 
   /// The provided auth store to determine login status, get the token, and use the headers for requests.
+  @override
   final AuthStore auth;
 
   /// The provided setting store to account for any user-defined behaviors.
+  @override
   final SettingsStore settings;
 
   /// The focus node for the textfield to allow for showing and hiding the keyboard/focus.
@@ -111,6 +114,7 @@ abstract class ChatStoreBase with Store {
   final String channelName;
 
   /// The channel's ID for API requests.
+  @override
   final String channelId;
 
   /// The channel's display name to show on widgets.
@@ -153,6 +157,7 @@ abstract class ChatStoreBase with Store {
   final ChatDetailsStore chatDetailsStore;
 
   /// The assets store responsible for badges, emotes, and the emote menu.
+  @override
   final ChatAssetsStore assetsStore;
 
   /// Requested message to be sent by the user. Will only be sent on receipt of a USERNOTICE command.
@@ -175,8 +180,10 @@ abstract class ChatStoreBase with Store {
   final _pendingSevenTVCallbacks = <_DelayedCallback>[];
 
   /// The set of message IDs that have been revealed by the user (for deleted messages).
+  @override
   final revealedMessageIds = ObservableSet<String>();
 
+  @override
   @action
   void revealMessage(String id) {
     revealedMessageIds.add(id);
@@ -1269,6 +1276,7 @@ abstract class ChatStoreBase with Store {
   }
 
   /// Cancels the previous notification/timer and creates a new one with the provided [notificationMessage].
+  @override
   @action
   void updateNotification(String notificationMessage) {
     // Cancel the previous notification to prevent the notification from phasing in and out

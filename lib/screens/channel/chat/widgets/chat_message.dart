@@ -6,6 +6,7 @@ import 'package:frosty/apis/twitch_api.dart';
 import 'package:frosty/constants.dart';
 import 'package:frosty/models/irc.dart';
 import 'package:frosty/models/user.dart';
+import 'package:frosty/screens/channel/chat/chat_render_context.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_store.dart';
 import 'package:frosty/screens/channel/chat/widgets/chat_user_modal.dart';
 import 'package:frosty/screens/channel/chat/widgets/reply_thread.dart';
@@ -15,7 +16,7 @@ import 'package:provider/provider.dart';
 
 class ChatMessage extends StatelessWidget {
   final IRCMessage ircMessage;
-  final ChatStore chatStore;
+  final ChatRenderContext chatStore;
   final bool isModal;
   final bool showReplyHeader;
   final bool isInReplyThread;
@@ -51,6 +52,9 @@ class ChatMessage extends StatelessWidget {
     // Ignore if the message is a recent message in the modal bottom sheet.
     if (isModal) return;
 
+    // User modal requires live ChatStore (recent messages, blocking, etc.).
+    if (chatStore is! ChatStore) return;
+
     // Ignore if long-pressing own username.
     if (ircMessage.user == null ||
         ircMessage.user == chatStore.auth.user.details?.login) {
@@ -61,7 +65,7 @@ class ChatMessage extends StatelessWidget {
       isScrollControlled: true,
       context: context,
       builder: (context) => ChatUserModal(
-        chatStore: chatStore,
+        chatStore: chatStore as ChatStore,
         username: ircMessage.user!,
         userId: ircMessage.tags['user-id']!,
         displayName: ircMessage.tags['display-name']!,
@@ -73,6 +77,9 @@ class ChatMessage extends StatelessWidget {
     // Ignore if the message is a recent message in the modal bottom sheet.
     if (isModal) return;
 
+    // User modal requires live ChatStore.
+    if (chatStore is! ChatStore) return;
+
     final twitchApi = context.read<TwitchApi>();
     twitchApi.getUser(userLogin: nickname).then((user) {
       if (context.mounted) {
@@ -80,7 +87,7 @@ class ChatMessage extends StatelessWidget {
           isScrollControlled: true,
           context: context,
           builder: (context) => ChatUserModal(
-            chatStore: chatStore,
+            chatStore: chatStore as ChatStore,
             username: user.login,
             userId: user.id,
             displayName: user.displayName,
@@ -91,7 +98,7 @@ class ChatMessage extends StatelessWidget {
   }
 
   /// The store to use for notifications and emote menu in merged mode.
-  ChatStore get _effectiveInputStore => inputChatStore ?? chatStore;
+  ChatRenderContext get _effectiveInputStore => inputChatStore ?? chatStore;
 
   Future<void> copyMessage() async {
     await Clipboard.setData(ClipboardData(text: ircMessage.message ?? ''));
@@ -144,53 +151,58 @@ class ChatMessage extends StatelessWidget {
             leading: const Icon(Icons.copy),
             title: const Text('Copy message'),
           ),
-          ListTile(
-            onTap: () async {
-              await copyMessage();
+          if (chatStore is ChatStore) ...[
+            ListTile(
+              onTap: () async {
+                await copyMessage();
+                final liveChatStore = chatStore as ChatStore;
 
-              final effectiveChatDelay = chatStore.settings.effectiveChatDelay;
+                final effectiveChatDelay =
+                    liveChatStore.settings.effectiveChatDelay;
 
-              final hasChatDelay =
-                  chatStore.settings.showVideo && effectiveChatDelay > 0;
+                final hasChatDelay =
+                    liveChatStore.settings.showVideo && effectiveChatDelay > 0;
 
-              if (hasChatDelay) {
-                _effectiveInputStore.updateNotification(
-                  'Chatting is disabled due to message delay (${effectiveChatDelay.toInt()}s)',
-                );
+                if (hasChatDelay) {
+                  _effectiveInputStore.updateNotification(
+                    'Chatting is disabled due to message delay (${effectiveChatDelay.toInt()}s)',
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                  return;
+                }
+
+                // In merged mode, switch to the source tab so the paste
+                // targets the correct channel's composer.
+                onActivateSourceTab?.call();
+
+                // Paste the copied message into the text controller
+                liveChatStore.textController.text = ircMessage.message ?? '';
+                liveChatStore.safeRequestFocus();
                 if (context.mounted) {
                   Navigator.pop(context);
                 }
-                return;
-              }
+              },
+              leading: const Icon(Icons.content_paste),
+              title: const Text('Copy message and paste'),
+            ),
+            ListTile(
+              onTap: () {
+                final liveChatStore = chatStore as ChatStore;
+                // In merged mode, switch to the source tab so the reply
+                // targets the correct channel (reply-parent-msg-id is
+                // channel-scoped).
+                onActivateSourceTab?.call();
 
-              // In merged mode, switch to the source tab so the paste
-              // targets the correct channel's composer.
-              onActivateSourceTab?.call();
-
-              // Paste the copied message into the text controller
-              chatStore.textController.text = ircMessage.message ?? '';
-              chatStore.safeRequestFocus();
-              if (context.mounted) {
+                liveChatStore.replyingToMessage = ircMessage;
+                liveChatStore.safeRequestFocus();
                 Navigator.pop(context);
-              }
-            },
-            leading: const Icon(Icons.content_paste),
-            title: const Text('Copy message and paste'),
-          ),
-          ListTile(
-            onTap: () {
-              // In merged mode, switch to the source tab so the reply
-              // targets the correct channel (reply-parent-msg-id is
-              // channel-scoped).
-              onActivateSourceTab?.call();
-
-              chatStore.replyingToMessage = ircMessage;
-              chatStore.safeRequestFocus();
-              Navigator.pop(context);
-            },
-            leading: const Icon(Icons.reply),
-            title: const Text('Reply to message'),
-          ),
+              },
+              leading: const Icon(Icons.reply),
+              title: const Text('Reply to message'),
+            ),
+          ],
         ],
       ),
     );
@@ -255,14 +267,14 @@ class ChatMessage extends StatelessWidget {
                 color: messageHeaderTextColor,
               );
               messageHeader = GestureDetector(
-                onTap: isModal
+                onTap: isModal || chatStore is! ChatStore
                     ? null
                     : () => showModalBottomSheetWithProperFocus(
                         context: context,
                         builder: (context) {
                           return ReplyThread(
                             selectedMessage: ircMessage,
-                            chatStore: chatStore,
+                            chatStore: chatStore as ChatStore,
                           );
                         },
                       ),

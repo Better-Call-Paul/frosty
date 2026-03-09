@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frosty/apis/base_api_client.dart';
 import 'package:frosty/apis/twitch_api.dart';
 import 'package:frosty/models/emotes.dart';
+import 'package:frosty/models/video.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 
 import '../fixtures/api_responses.dart';
@@ -387,6 +388,65 @@ void main() {
       expect(emotes[0].type, EmoteType.twitchBits);
       expect(emotes[1].type, EmoteType.twitchFollower);
       expect(emotes[2].type, EmoteType.twitchChannel);
+    });
+  });
+
+  group('getVideos', () {
+    test('returns videos for a user', () async {
+      dioAdapter.onGet(
+        'https://api.twitch.tv/helix/videos',
+        (server) => server.reply(200, {
+          'data': [
+            {
+              'id': '12345',
+              'stream_id': '67890',
+              'user_id': '111',
+              'user_login': 'testuser',
+              'user_name': 'TestUser',
+              'title': 'Test VOD',
+              'created_at': '2024-01-15T10:30:00Z',
+              'published_at': '2024-01-15T10:30:00Z',
+              'duration': '3h26m15s',
+              'thumbnail_url': 'https://cdn/thumb.jpg',
+              'view_count': 500,
+            },
+          ],
+          'pagination': {'cursor': 'next_page'},
+        }),
+        queryParameters: {
+          'user_id': '111',
+          'first': '20',
+          'type': 'archive',
+        },
+      );
+
+      final videos = await api.getVideos(userId: '111');
+
+      expect(videos.data, hasLength(1));
+      expect(videos.data.first.id, '12345');
+      expect(videos.data.first.title, 'Test VOD');
+      expect(videos.data.first.duration, '3h26m15s');
+      expect(videos.pagination['cursor'], 'next_page');
+    });
+
+    test('passes cursor for pagination', () async {
+      dioAdapter.onGet(
+        'https://api.twitch.tv/helix/videos',
+        (server) => server.reply(200, {
+          'data': <Map<String, dynamic>>[],
+          'pagination': <String, String>{},
+        }),
+        queryParameters: {
+          'user_id': '111',
+          'first': '20',
+          'type': 'archive',
+          'after': 'page2',
+        },
+      );
+
+      final videos = await api.getVideos(userId: '111', cursor: 'page2');
+
+      expect(videos.data, isEmpty);
     });
   });
 }

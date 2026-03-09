@@ -10,6 +10,7 @@ import 'package:frosty/models/followed_channel.dart';
 import 'package:frosty/models/shared_chat_session.dart';
 import 'package:frosty/models/stream.dart';
 import 'package:frosty/models/user.dart';
+import 'package:frosty/models/video.dart';
 
 /// The Twitch service for making API calls.
 class TwitchApi extends BaseApiClient {
@@ -203,6 +204,23 @@ class TwitchApi extends BaseApiClient {
     );
 
     return FollowedChannels.fromJson(data);
+  }
+
+  /// Returns a [VideosTwitch] object containing past broadcasts for the given [userId].
+  Future<VideosTwitch> getVideos({
+    required String userId,
+    String? cursor,
+  }) async {
+    final queryParams = <String, String>{
+      'user_id': userId,
+      'first': '20',
+      'type': 'archive',
+    };
+    if (cursor != null) queryParams['after'] = cursor;
+
+    final data = await get<JsonMap>('/videos', queryParameters: queryParams);
+
+    return VideosTwitch.fromJson(data);
   }
 
   /// Returns a [StreamsTwitch] object that contains the list of streams under the given game/category ID.

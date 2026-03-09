@@ -10,6 +10,7 @@ import 'package:frosty/screens/channel/chat/details/chat_details_store.dart';
 import 'package:frosty/screens/channel/chat/details/chat_modes.dart';
 import 'package:frosty/screens/channel/chat/details/chat_users_list.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_store.dart';
+import 'package:frosty/screens/channel/vod/vod_list.dart';
 import 'package:frosty/screens/settings/settings.dart';
 import 'package:frosty/utils.dart';
 import 'package:frosty/utils/modal_bottom_sheet.dart';
@@ -367,6 +368,20 @@ class _ChatDetailsState extends State<ChatDetails> {
                   chatDetailsStore: widget.chatDetailsStore,
                   chatStore: widget.chatStore,
                   userLogin: widget.userLogin,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.video_library_rounded),
+            title: const Text('Past broadcasts'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VodList(
+                  userId: widget.chatStore.channelId,
+                  displayName: widget.chatStore.displayName,
                 ),
               ),
             ),
