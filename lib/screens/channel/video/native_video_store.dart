@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:better_native_video_player/better_native_video_player.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:frosty/screens/settings/stores/auth_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
 import 'package:mobx/mobx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simple_pip_mode/simple_pip.dart';
 
 part 'native_video_store.g.dart';
 
@@ -42,6 +44,9 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   List<NativeVideoPlayerQuality> _qualityObjects = [];
   var _firstTimeSettingQuality = true;
   int? _pendingQualityIndex;
+
+  final _pip = SimplePip();
+  ReactionDisposer? _disposeAndroidAutoPipReaction;
 
   StreamSubscription<bool>? _pipSub;
   StreamSubscription<List<NativeVideoPlayerQuality>>? _qualitiesSub;
@@ -96,6 +101,16 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
     _scheduleOverlayHide();
     updateStreamInfo();
     _initPlayer();
+
+    if (Platform.isAndroid) {
+      _disposeAndroidAutoPipReaction = autorun((_) async {
+        if (settingsStore.showVideo && await SimplePip.isAutoPipAvailable) {
+          _pip.setAutoPipMode();
+        } else {
+          _pip.setAutoPipMode(autoEnter: false);
+        }
+      });
+    }
   }
 
   @action
@@ -337,16 +352,20 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
 
   @override
   void requestPictureInPicture() {
-    _controller?.enterPictureInPicture();
+    if (Platform.isAndroid) {
+      _pip.enterPipMode(autoEnter: true);
+    } else {
+      _controller?.enterPictureInPicture();
+    }
   }
 
   @override
   @action
   void togglePictureInPicture() {
-    if (_isInPipMode) {
+    if (Platform.isIOS && _isInPipMode) {
       _controller?.exitPictureInPicture();
     } else {
-      _controller?.enterPictureInPicture();
+      requestPictureInPicture();
     }
   }
 
@@ -434,10 +453,17 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @override
   @action
   void dispose() {
+    if (Platform.isAndroid) {
+      SimplePip.isAutoPipAvailable.then((isAutoPipAvailable) {
+        if (isAutoPipAvailable) _pip.setAutoPipMode(autoEnter: false);
+      });
+    }
+
     _overlayTimer?.cancel();
     _latencyTimer?.cancel();
     _pipSub?.cancel();
     _qualitiesSub?.cancel();
+    _disposeAndroidAutoPipReaction?.call();
 
     _controller?.removeActivityListener(_handleActivityEvent);
     _controller?.dispose();

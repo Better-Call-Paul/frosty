@@ -24,11 +24,11 @@ class VideoSettings extends StatelessWidget {
             value: settingsStore.showVideo,
             onChanged: (newValue) => settingsStore.showVideo = newValue,
           ),
-          if (Platform.isIOS && settingsStore.showVideo)
+          if (settingsStore.showVideo)
             SettingsListSwitch(
               title: 'Native player (experimental)',
               subtitle: const Text(
-                'Native video player with auto picture-in-picture and quality selection.',
+                'More performant video player with auto picture-in-picture and quality selection.',
               ),
               value: settingsStore.useNativePlayer,
               onChanged: (newValue) =>
@@ -74,7 +74,8 @@ class VideoSettings extends StatelessWidget {
               'Allows switching between Twitch\'s overlay and the custom overlay.',
             ),
             value: settingsStore.toggleableOverlay,
-            onChanged: (newValue) => settingsStore.toggleableOverlay = newValue,
+            onChanged: (newValue) =>
+                settingsStore.toggleableOverlay = newValue,
           ),
           SettingsListSwitch(
             title: 'Show latency',

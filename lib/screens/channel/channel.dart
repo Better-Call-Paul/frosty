@@ -79,7 +79,7 @@ class _VideoChatState extends State<VideoChat>
   );
 
   late final VideoPlayerInterface _videoStore =
-      Platform.isIOS && context.settingsStore.useNativePlayer
+      context.settingsStore.useNativePlayer
           ? NativeVideoStore(
               userLogin: widget.userLogin,
               userId: widget.userId,
