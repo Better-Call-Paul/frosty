@@ -241,11 +241,6 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
       _latency = '${rounded}s';
     });
 
-    // Auto seek to live edge if we've drifted too far.
-    if (seconds > 15) {
-      await _controller?.seekToLiveEdge();
-    }
-
     if (!settingsStore.autoSyncChatDelay) return;
 
     // Only update when unset or drifted by >2s to avoid restarting
@@ -437,9 +432,6 @@ abstract class NativeVideoStoreBase with Store implements VideoPlayerInterface {
   @action
   void handleAppResume() {
     updateStreamInfo(forceUpdate: true);
-    // Re-check latency immediately — the stream may have drifted or died
-    // while backgrounded. If latency > 15s, _pollLatency auto-seeks to live edge.
-    _pollLatency();
   }
 
   @override
