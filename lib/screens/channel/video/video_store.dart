@@ -130,6 +130,12 @@ abstract class VideoStoreBase with Store {
         )
         ..setNavigationDelegate(
           NavigationDelegate(
+            onProgress: (progress) {
+              // Hide Twitch's native overlay before it visibly renders
+              if (_needsInit && settingsStore.showOverlay) {
+                _hideDefaultOverlay();
+              }
+            },
             onPageFinished: (url) async {
               if (url != videoUrl) return;
               if (!_needsInit) return;
@@ -709,6 +715,11 @@ abstract class VideoStoreBase with Store {
   @action
   Future<void> initVideo() async {
     if (await videoWebViewController.currentUrl() == videoUrl) {
+      // Hide Twitch's native controls before the video element finishes loading
+      if (settingsStore.showOverlay) {
+        await _hideDefaultOverlay();
+      }
+
       // Declare `window` level utility methods and add event listeners to notify the JavaScript channels when the video plays and pauses.
       try {
         await videoWebViewController.runJavaScript('''
@@ -826,7 +837,6 @@ abstract class VideoStoreBase with Store {
           });
         ''');
         if (settingsStore.showOverlay) {
-          await _hideDefaultOverlay();
           // Start latency tracking if either:
           // - showLatency is enabled (user wants to see it on overlay), OR
           // - autoSyncChatDelay is enabled (needs latency data for syncing)
