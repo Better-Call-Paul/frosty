@@ -95,6 +95,7 @@ abstract class VideoStoreBase with Store {
         ..addJavaScriptChannel(
           'VideoPause',
           onMessageReceived: (message) {
+            _videoInitialized = true;
             _paused = true;
             if (Platform.isAndroid) pip.setIsPlaying(false);
           },
@@ -102,6 +103,7 @@ abstract class VideoStoreBase with Store {
         ..addJavaScriptChannel(
           'VideoPlaying',
           onMessageReceived: (message) {
+            _videoInitialized = true;
             _paused = false;
             if (Platform.isAndroid) pip.setIsPlaying(true);
           },
@@ -174,6 +176,12 @@ abstract class VideoStoreBase with Store {
 
   /// Disposes the latency settings reaction.
   ReactionDisposer? _disposeLatencySettingsReaction;
+
+  /// Whether the video player has received its first play/pause event.
+  ///
+  /// Used to avoid showing Frosty's play button before the stream initializes.
+  @readonly
+  var _videoInitialized = false;
 
   /// If the video is currently paused.
   ///
@@ -444,7 +452,10 @@ abstract class VideoStoreBase with Store {
               .player-controls,
               #channel-player-disclosures,
               [data-a-target="player-overlay-preview-background"],
-              [data-a-target="player-overlay-video-stats"] {
+              [data-a-target="player-overlay-video-stats"],
+              [data-a-target="player-overlay-play-button"],
+              [data-a-target="player-overlay-click-handler"],
+              .player-overlay-background {
                 display: none !important;
                 visibility: hidden !important;
                 pointer-events: none !important;
